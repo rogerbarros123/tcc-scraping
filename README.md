@@ -75,8 +75,8 @@ Este projeto integra um **backend** em FastAPI para raspagem de links, extraçã
 
 5. **Certifique-se de ter o Milvus em execução** via Docker Compose. Por exemplo, crie um arquivo `docker-compose.yml` na raiz do projeto com:
 
-   ```yaml
-   ervices:
+```yaml
+services:
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.0
@@ -132,12 +132,17 @@ Este projeto integra um **backend** em FastAPI para raspagem de links, extraçã
     depends_on:
       - standalone
 
+volumes:
+  etcd:
+  minio:
+  milvus:
+```
 
-   Em seguida, execute:
+Em seguida, execute:
 
-   ```bash
-   docker-compose up -d
-   ```
+```bash
+docker-compose up -d
+```
 
 ---
 
