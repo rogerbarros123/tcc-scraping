@@ -57,7 +57,6 @@ Este projeto integra um **backend** em FastAPI para raspagem de links, extraçã
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate   # Linux/Mac
-   .\.venv\Scripts\activate  # Windows
    ```
 
 3. Instale as dependências:
@@ -72,6 +71,72 @@ Este projeto integra um **backend** em FastAPI para raspagem de links, extraçã
    OPENAI_API_KEY=...
    MILVUS_URL=localhost:19530
    # (Opcional) MISTRAL_API_KEY, SCRAPING_API_URL, SCRAPING_API_KEY
+   ```
+
+5. **Certifique-se de ter o Milvus em execução** via Docker Compose. Por exemplo, crie um arquivo `docker-compose.yml` na raiz do projeto com:
+
+   ```yaml
+   ervices:
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.0
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: >
+      etcd
+      --advertise-client-urls=http://etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir /etcd
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2020-12-03T00-03-10Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+    command: minio server /minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.5.0
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+    depends_on:
+      - etcd
+      - minio
+
+  attu:
+    container_name: milvus-attu
+    image: zilliz/attu:v2.5.0
+    environment:
+      MILVUS_URL: standalone:19530
+    ports:
+      - "7070:3000"
+    depends_on:
+      - standalone
+
+
+   Em seguida, execute:
+
+   ```bash
+   docker-compose up -d
    ```
 
 ---
